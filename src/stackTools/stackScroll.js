@@ -1,4 +1,4 @@
-import external from '../externalModules.js';
+import EVENTS from '../events.js';
 import touchDragTool from '../imageTools/touchDragTool.js';
 import multiTouchDragTool from '../imageTools/multiTouchDragTool.js';
 import simpleMouseButtonTool from '../imageTools/simpleMouseButtonTool.js';
@@ -6,29 +6,40 @@ import mouseWheelTool from '../imageTools/mouseWheelTool.js';
 import isMouseButtonEnabled from '../util/isMouseButtonEnabled.js';
 import scroll from '../util/scroll.js';
 import { getToolState } from '../stateManagement/toolState.js';
+import { getToolOptions } from '../enabledElementTools.js';
 
-function mouseUpCallback (e, eventData) {
-  external.$(eventData.element).off('CornerstoneToolsMouseDrag', dragCallback);
-  external.$(eventData.element).off('CornerstoneToolsMouseUp', mouseUpCallback);
-  external.$(eventData.element).off('CornerstoneToolsMouseClick', mouseUpCallback);
+const toolType = 'stackScroll';
+
+function mouseUpCallback (e) {
+  const eventData = e.detail;
+  const element = eventData.element;
+
+  element.removeEventListener(EVENTS.MOUSE_DRAG, dragCallback);
+  element.removeEventListener(EVENTS.MOUSE_UP, mouseUpCallback);
+  element.removeEventListener(EVENTS.MOUSE_CLICK, mouseUpCallback);
 }
 
-function mouseDownCallback (e, eventData) {
-  if (isMouseButtonEnabled(eventData.which, e.data.mouseButtonMask)) {
+function mouseDownCallback (e) {
+  const eventData = e.detail;
+  const element = eventData.element;
+  const options = getToolOptions(toolType, element);
+
+  if (isMouseButtonEnabled(eventData.which, options.mouseButtonMask)) {
     const mouseDragEventData = {
       deltaY: 0
     };
 
-    external.$(eventData.element).on('CornerstoneToolsMouseDrag', mouseDragEventData, dragCallback);
-    external.$(eventData.element).on('CornerstoneToolsMouseUp', mouseUpCallback);
-    external.$(eventData.element).on('CornerstoneToolsMouseClick', mouseUpCallback);
+    element.addEventListener(EVENTS.MOUSE_DRAG, mouseDragEventData, dragCallback);
+    element.addEventListener(EVENTS.MOUSE_UP, mouseUpCallback);
+    element.addEventListener(EVENTS.MOUSE_CLICK, mouseUpCallback);
     e.stopImmediatePropagation();
 
     return false;
   }
 }
 
-function mouseWheelCallback (e, eventData) {
+function mouseWheelCallback (e) {
+  const eventData = e.detail;
   const images = -eventData.direction;
 
   const config = stackScroll.getConfiguration();
@@ -42,7 +53,8 @@ function mouseWheelCallback (e, eventData) {
   scroll(eventData.element, images, loop);
 }
 
-function dragCallback (e, eventData) {
+function dragCallback (e) {
+  const eventData = e.detail;
   const element = eventData.element;
 
   const toolData = getToolState(element, 'stack');
@@ -56,7 +68,7 @@ function dragCallback (e, eventData) {
   const config = stackScroll.getConfiguration();
 
   // The Math.max here makes it easier to mouseDrag-scroll small or really large image stacks
-  let pixelsPerImage = Math.max(2, external.$(element).height() / Math.max(stackData.imageIds.length, 8));
+  let pixelsPerImage = Math.max(2, element.offsetHeight / Math.max(stackData.imageIds.length, 8));
 
   if (config && config.stackScrollSpeed) {
     pixelsPerImage = config.stackScrollSpeed;
@@ -73,11 +85,12 @@ function dragCallback (e, eventData) {
     scroll(element, imageIdIndexOffset);
   }
 
-  return false; // False = causes jquery to preventDefault() and stopPropagation() this event
+  e.preventDefault();
+  e.stopPropagation();
 }
 
 // Module/private exports
-const stackScroll = simpleMouseButtonTool(mouseDownCallback);
+const stackScroll = simpleMouseButtonTool(mouseDownCallback, toolType);
 const stackScrollWheel = mouseWheelTool(mouseWheelCallback);
 
 const options = {
@@ -87,11 +100,12 @@ const options = {
 };
 const stackScrollTouchDrag = touchDragTool(dragCallback, options);
 
-function multiTouchDragCallback (e, eventData) {
+function multiTouchDragCallback (e) {
+  const eventData = e.detail;
   const config = stackScrollMultiTouch.getConfiguration();
 
   if (config && config.testPointers(eventData)) {
-    dragCallback(e, eventData);
+    dragCallback(e);
   }
 }
 

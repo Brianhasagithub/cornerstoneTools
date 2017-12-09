@@ -1,3 +1,4 @@
+import EVENTS from '../events.js';
 import external from '../externalModules.js';
 import triggerEvent from '../util/triggerEvent.js';
 
@@ -66,7 +67,7 @@ function mouseWheel (e) {
     imageY: startingCoords.y
   };
 
-  triggerEvent(element, 'CornerstoneToolsMouseWheel', mouseWheelData);
+  triggerEvent(element, EVENTS.MOUSE_WHEEL, mouseWheelData);
 }
 
 const mouseWheelEvents = 'mousewheel DOMMouseScroll';
@@ -75,11 +76,11 @@ function enable (element) {
   // Prevent handlers from being attached multiple times
   disable(element);
 
-  external.$(element).on(mouseWheelEvents, mouseWheel);
+  element.addEventListener(mouseWheelEvents, mouseWheel);
 }
 
 function disable (element) {
-  external.$(element).unbind(mouseWheelEvents, mouseWheel);
+  element.removeEventListener(mouseWheelEvents, mouseWheel);
 }
 
 // Module exports
