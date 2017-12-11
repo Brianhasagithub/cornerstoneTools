@@ -8,7 +8,7 @@ import moveAllHandles from '../manipulators/moveAllHandles.js';
 import anyHandlesOutsideImage from '../manipulators/anyHandlesOutsideImage.js';
 import isMouseButtonEnabled from '../util/isMouseButtonEnabled.js';
 import { addToolState, removeToolState, getToolState } from '../stateManagement/toolState.js';
-import { getToolOptions } from '../enabledElementTools.js';
+import { setToolOptions, getToolOptions } from '../enabledElementTools.js';
 
 export default function (mouseToolInterface, preventHandleOutsideImage) {
   const toolType = mouseToolInterface.toolType;
@@ -103,6 +103,10 @@ export default function (mouseToolInterface, preventHandleOutsideImage) {
     let data;
     const options = getToolOptions(toolType, element);
 
+    if (!isMouseButtonEnabled(eventData.which, options.mouseButtonMask)) {
+      return;
+    }
+
     function handleDoneMove () {
       data.active = false;
       if (anyHandlesOutsideImage(eventData, data.handles)) {
@@ -114,49 +118,47 @@ export default function (mouseToolInterface, preventHandleOutsideImage) {
       element.addEventListener(EVENTS.MOUSE_MOVE, mouseMoveCallback);
     }
 
-    if (isMouseButtonEnabled(eventData.which, options.mouseButtonMask)) {
-      const coords = eventData.startPoints.canvas;
-      const toolData = getToolState(e.currentTarget, toolType);
+    const coords = eventData.startPoints.canvas;
+    const toolData = getToolState(e.currentTarget, toolType);
 
-      let i;
+    let i;
 
-      // Now check to see if there is a handle we can move
-      const distanceSq = 25;
+    // Now check to see if there is a handle we can move
+    const distanceSq = 25;
 
-      if (toolData !== undefined) {
-        for (i = 0; i < toolData.data.length; i++) {
-          data = toolData.data[i];
-          const handle = getHandleNearImagePoint(eventData.element, data.handles, coords, distanceSq);
+    if (toolData !== undefined) {
+      for (i = 0; i < toolData.data.length; i++) {
+        data = toolData.data[i];
+        const handle = getHandleNearImagePoint(eventData.element, data.handles, coords, distanceSq);
 
-          if (handle !== undefined) {
-            element.removeEventListener(EVENTS.MOUSE_MOVE, mouseMoveCallback);
-            data.active = true;
-            moveHandle(eventData, toolType, data, handle, handleDoneMove, preventHandleOutsideImage);
-            e.stopImmediatePropagation();
+        if (handle !== undefined) {
+          element.removeEventListener(EVENTS.MOUSE_MOVE, mouseMoveCallback);
+          data.active = true;
+          moveHandle(eventData, toolType, data, handle, handleDoneMove, preventHandleOutsideImage);
+          e.stopImmediatePropagation();
 
-            return false;
-          }
+          return false;
         }
       }
+    }
 
-      // Now check to see if there is a line we can move
-      // Now check to see if we have a tool that we can move
-      const options = {
-        deleteIfHandleOutsideImage: true,
-        preventHandleOutsideImage
-      };
+    // Now check to see if there is a line we can move
+    // Now check to see if we have a tool that we can move
+    const opt = {
+      deleteIfHandleOutsideImage: true,
+      preventHandleOutsideImage
+    };
 
-      if (toolData !== undefined && mouseToolInterface.pointInsideRect !== undefined) {
-        for (i = 0; i < toolData.data.length; i++) {
-          data = toolData.data[i];
-          if (mouseToolInterface.pointInsideRect(eventData.element, data, coords)) {
-            element.removeEventListener(EVENTS.MOUSE_MOVE, mouseMoveCallback);
-            moveAllHandles(e, data, toolData, toolType, options, handleDoneMove);
-            element.addEventListener(EVENTS.MOUSE_MOVE, mouseMoveCallback);
-            e.stopImmediatePropagation();
+    if (toolData !== undefined && mouseToolInterface.pointInsideRect !== undefined) {
+      for (i = 0; i < toolData.data.length; i++) {
+        data = toolData.data[i];
+        if (mouseToolInterface.pointInsideRect(eventData.element, data, coords)) {
+          element.removeEventListener(EVENTS.MOUSE_MOVE, mouseMoveCallback);
+          moveAllHandles(e, data, toolData, toolType, opt, handleDoneMove);
+          element.addEventListener(EVENTS.MOUSE_MOVE, mouseMoveCallback);
+          e.stopImmediatePropagation();
 
-            return false;
-          }
+          return false;
         }
       }
     }
@@ -187,9 +189,7 @@ export default function (mouseToolInterface, preventHandleOutsideImage) {
 
   // Visible, interactive and can create
   function activate (element, mouseButtonMask) {
-    const eventData = {
-      mouseButtonMask
-    };
+    setToolOptions(toolType, element, { mouseButtonMask });
 
     element.removeEventListener(EVENTS.IMAGE_RENDERED, mouseToolInterface.onImageRendered);
     element.removeEventListener(EVENTS.MOUSE_MOVE, mouseMoveCallback);
@@ -197,18 +197,16 @@ export default function (mouseToolInterface, preventHandleOutsideImage) {
     element.removeEventListener(EVENTS.MOUSE_DOWN_ACTIVATE, mouseDownActivateCallback);
 
     element.addEventListener(EVENTS.IMAGE_RENDERED, mouseToolInterface.onImageRendered);
-    element.addEventListener(EVENTS.MOUSE_MOVE, eventData, mouseMoveCallback);
-    element.addEventListener(EVENTS.MOUSE_DOWN, eventData, mouseDownCallback);
-    element.addEventListener(EVENTS.MOUSE_DOWN_ACTIVATE, eventData, mouseDownActivateCallback);
+    element.addEventListener(EVENTS.MOUSE_MOVE, mouseMoveCallback);
+    element.addEventListener(EVENTS.MOUSE_DOWN, mouseDownCallback);
+    element.addEventListener(EVENTS.MOUSE_DOWN_ACTIVATE, mouseDownActivateCallback);
 
     external.cornerstone.updateImage(element);
   }
 
   // Visible, interactive
   function deactivate (element, mouseButtonMask) {
-    const eventData = {
-      mouseButtonMask
-    };
+    setToolOptions(toolType, element, { mouseButtonMask });
 
     element.removeEventListener(EVENTS.IMAGE_RENDERED, mouseToolInterface.onImageRendered);
     element.removeEventListener(EVENTS.MOUSE_MOVE, mouseMoveCallback);
@@ -216,8 +214,8 @@ export default function (mouseToolInterface, preventHandleOutsideImage) {
     element.removeEventListener(EVENTS.MOUSE_DOWN_ACTIVATE, mouseDownActivateCallback);
 
     element.addEventListener(EVENTS.IMAGE_RENDERED, mouseToolInterface.onImageRendered);
-    element.addEventListener(EVENTS.MOUSE_MOVE, eventData, mouseMoveCallback);
-    element.addEventListener(EVENTS.MOUSE_DOWN, eventData, mouseDownCallback);
+    element.addEventListener(EVENTS.MOUSE_MOVE, mouseMoveCallback);
+    element.addEventListener(EVENTS.MOUSE_DOWN, mouseDownCallback);
 
     external.cornerstone.updateImage(element);
   }

@@ -286,6 +286,8 @@ export default function (mouseToolInterface) {
 
   // Visible, interactive
   function deactivate (element, mouseButtonMask) {
+    setToolOptions(toolType, element, { mouseButtonMask });
+
     const eventType = EVENTS.TOOL_DEACTIVATED;
     const statusChangeEventData = {
       mouseButtonMask,

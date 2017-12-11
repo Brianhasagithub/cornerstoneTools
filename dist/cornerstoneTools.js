@@ -349,6 +349,49 @@ function triggerEvent(el, type) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+var elementToolOptions = {};
+
+function getToolOptions(toolType, element) {
+  if (!elementToolOptions[toolType]) {
+    throw new Error('getToolOptions: No tool data for this tool type');
+  }
+
+  var toolOptions = elementToolOptions[toolType];
+  var optionsObject = toolOptions.find(function (toolOptionObject) {
+    return toolOptionObject.element === element;
+  });
+
+  if (!optionsObject) {
+    throw new Error('getToolOptions: No element found');
+  }
+
+  return optionsObject.options;
+}
+
+function setToolOptions(toolType, element, options) {
+  if (!elementToolOptions[toolType]) {
+    elementToolOptions[toolType] = [];
+  }
+
+  elementToolOptions[toolType].push({
+    element: element,
+    options: options
+  });
+}
+
+exports.getToolOptions = getToolOptions;
+exports.setToolOptions = setToolOptions;
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 
 var defaultColor = 'white',
     activeColor = 'greenyellow',
@@ -393,49 +436,6 @@ var toolColors = {
 };
 
 exports.default = toolColors;
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-var elementToolOptions = {};
-
-function getToolOptions(toolType, element) {
-  if (!elementToolOptions[toolType]) {
-    throw new Error('getToolOptions: No tool data for this tool type');
-  }
-
-  var toolOptions = elementToolOptions[toolType];
-  var optionsObject = toolOptions.find(function (toolOptionObject) {
-    return toolOptionObject.element === element;
-  });
-
-  if (!optionsObject) {
-    throw new Error('getToolOptions: No element found');
-  }
-
-  return optionsObject.options;
-}
-
-function setToolOptions(toolType, element, options) {
-  if (!elementToolOptions[toolType]) {
-    elementToolOptions[toolType] = [];
-  }
-
-  elementToolOptions[toolType].push({
-    element: element,
-    options: options
-  });
-}
-
-exports.getToolOptions = getToolOptions;
-exports.setToolOptions = setToolOptions;
 
 /***/ }),
 /* 7 */
@@ -847,6 +847,8 @@ exports.default = function (mouseToolInterface) {
 
   // Visible, interactive
   function deactivate(element, mouseButtonMask) {
+    (0, _enabledElementTools.setToolOptions)(toolType, element, { mouseButtonMask: mouseButtonMask });
+
     var eventType = _events2.default.TOOL_DEACTIVATED;
     var statusChangeEventData = {
       mouseButtonMask: mouseButtonMask,
@@ -959,7 +961,7 @@ var _triggerEvent = __webpack_require__(4);
 
 var _triggerEvent2 = _interopRequireDefault(_triggerEvent);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -1653,7 +1655,7 @@ var _events = __webpack_require__(1);
 
 var _events2 = _interopRequireDefault(_events);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -3580,7 +3582,7 @@ var _calculateReferenceLine = __webpack_require__(41);
 
 var _calculateReferenceLine2 = _interopRequireDefault(_calculateReferenceLine);
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 var _toolColors2 = _interopRequireDefault(_toolColors);
 
@@ -3844,7 +3846,7 @@ var _scroll2 = _interopRequireDefault(_scroll);
 
 var _toolState = __webpack_require__(2);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -4712,6 +4714,10 @@ exports.default = function (mouseToolInterface, preventHandleOutsideImage) {
     var data = void 0;
     var options = (0, _enabledElementTools.getToolOptions)(toolType, element);
 
+    if (!(0, _isMouseButtonEnabled2.default)(eventData.which, options.mouseButtonMask)) {
+      return;
+    }
+
     function handleDoneMove() {
       data.active = false;
       if ((0, _anyHandlesOutsideImage2.default)(eventData, data.handles)) {
@@ -4723,49 +4729,47 @@ exports.default = function (mouseToolInterface, preventHandleOutsideImage) {
       element.addEventListener(_events2.default.MOUSE_MOVE, mouseMoveCallback);
     }
 
-    if ((0, _isMouseButtonEnabled2.default)(eventData.which, options.mouseButtonMask)) {
-      var coords = eventData.startPoints.canvas;
-      var toolData = (0, _toolState.getToolState)(e.currentTarget, toolType);
+    var coords = eventData.startPoints.canvas;
+    var toolData = (0, _toolState.getToolState)(e.currentTarget, toolType);
 
-      var i = void 0;
+    var i = void 0;
 
-      // Now check to see if there is a handle we can move
-      var distanceSq = 25;
+    // Now check to see if there is a handle we can move
+    var distanceSq = 25;
 
-      if (toolData !== undefined) {
-        for (i = 0; i < toolData.data.length; i++) {
-          data = toolData.data[i];
-          var handle = (0, _getHandleNearImagePoint2.default)(eventData.element, data.handles, coords, distanceSq);
+    if (toolData !== undefined) {
+      for (i = 0; i < toolData.data.length; i++) {
+        data = toolData.data[i];
+        var handle = (0, _getHandleNearImagePoint2.default)(eventData.element, data.handles, coords, distanceSq);
 
-          if (handle !== undefined) {
-            element.removeEventListener(_events2.default.MOUSE_MOVE, mouseMoveCallback);
-            data.active = true;
-            (0, _moveHandle2.default)(eventData, toolType, data, handle, handleDoneMove, preventHandleOutsideImage);
-            e.stopImmediatePropagation();
+        if (handle !== undefined) {
+          element.removeEventListener(_events2.default.MOUSE_MOVE, mouseMoveCallback);
+          data.active = true;
+          (0, _moveHandle2.default)(eventData, toolType, data, handle, handleDoneMove, preventHandleOutsideImage);
+          e.stopImmediatePropagation();
 
-            return false;
-          }
+          return false;
         }
       }
+    }
 
-      // Now check to see if there is a line we can move
-      // Now check to see if we have a tool that we can move
-      var _options = {
-        deleteIfHandleOutsideImage: true,
-        preventHandleOutsideImage: preventHandleOutsideImage
-      };
+    // Now check to see if there is a line we can move
+    // Now check to see if we have a tool that we can move
+    var opt = {
+      deleteIfHandleOutsideImage: true,
+      preventHandleOutsideImage: preventHandleOutsideImage
+    };
 
-      if (toolData !== undefined && mouseToolInterface.pointInsideRect !== undefined) {
-        for (i = 0; i < toolData.data.length; i++) {
-          data = toolData.data[i];
-          if (mouseToolInterface.pointInsideRect(eventData.element, data, coords)) {
-            element.removeEventListener(_events2.default.MOUSE_MOVE, mouseMoveCallback);
-            (0, _moveAllHandles2.default)(e, data, toolData, toolType, _options, handleDoneMove);
-            element.addEventListener(_events2.default.MOUSE_MOVE, mouseMoveCallback);
-            e.stopImmediatePropagation();
+    if (toolData !== undefined && mouseToolInterface.pointInsideRect !== undefined) {
+      for (i = 0; i < toolData.data.length; i++) {
+        data = toolData.data[i];
+        if (mouseToolInterface.pointInsideRect(eventData.element, data, coords)) {
+          element.removeEventListener(_events2.default.MOUSE_MOVE, mouseMoveCallback);
+          (0, _moveAllHandles2.default)(e, data, toolData, toolType, opt, handleDoneMove);
+          element.addEventListener(_events2.default.MOUSE_MOVE, mouseMoveCallback);
+          e.stopImmediatePropagation();
 
-            return false;
-          }
+          return false;
         }
       }
     }
@@ -4796,9 +4800,7 @@ exports.default = function (mouseToolInterface, preventHandleOutsideImage) {
 
   // Visible, interactive and can create
   function activate(element, mouseButtonMask) {
-    var eventData = {
-      mouseButtonMask: mouseButtonMask
-    };
+    (0, _enabledElementTools.setToolOptions)(toolType, element, { mouseButtonMask: mouseButtonMask });
 
     element.removeEventListener(_events2.default.IMAGE_RENDERED, mouseToolInterface.onImageRendered);
     element.removeEventListener(_events2.default.MOUSE_MOVE, mouseMoveCallback);
@@ -4806,18 +4808,16 @@ exports.default = function (mouseToolInterface, preventHandleOutsideImage) {
     element.removeEventListener(_events2.default.MOUSE_DOWN_ACTIVATE, mouseDownActivateCallback);
 
     element.addEventListener(_events2.default.IMAGE_RENDERED, mouseToolInterface.onImageRendered);
-    element.addEventListener(_events2.default.MOUSE_MOVE, eventData, mouseMoveCallback);
-    element.addEventListener(_events2.default.MOUSE_DOWN, eventData, mouseDownCallback);
-    element.addEventListener(_events2.default.MOUSE_DOWN_ACTIVATE, eventData, mouseDownActivateCallback);
+    element.addEventListener(_events2.default.MOUSE_MOVE, mouseMoveCallback);
+    element.addEventListener(_events2.default.MOUSE_DOWN, mouseDownCallback);
+    element.addEventListener(_events2.default.MOUSE_DOWN_ACTIVATE, mouseDownActivateCallback);
 
     _externalModules2.default.cornerstone.updateImage(element);
   }
 
   // Visible, interactive
   function deactivate(element, mouseButtonMask) {
-    var eventData = {
-      mouseButtonMask: mouseButtonMask
-    };
+    (0, _enabledElementTools.setToolOptions)(toolType, element, { mouseButtonMask: mouseButtonMask });
 
     element.removeEventListener(_events2.default.IMAGE_RENDERED, mouseToolInterface.onImageRendered);
     element.removeEventListener(_events2.default.MOUSE_MOVE, mouseMoveCallback);
@@ -4825,8 +4825,8 @@ exports.default = function (mouseToolInterface, preventHandleOutsideImage) {
     element.removeEventListener(_events2.default.MOUSE_DOWN_ACTIVATE, mouseDownActivateCallback);
 
     element.addEventListener(_events2.default.IMAGE_RENDERED, mouseToolInterface.onImageRendered);
-    element.addEventListener(_events2.default.MOUSE_MOVE, eventData, mouseMoveCallback);
-    element.addEventListener(_events2.default.MOUSE_DOWN, eventData, mouseDownCallback);
+    element.addEventListener(_events2.default.MOUSE_MOVE, mouseMoveCallback);
+    element.addEventListener(_events2.default.MOUSE_DOWN, mouseDownCallback);
 
     _externalModules2.default.cornerstone.updateImage(element);
   }
@@ -4879,7 +4879,7 @@ var _isMouseButtonEnabled2 = _interopRequireDefault(_isMouseButtonEnabled);
 
 var _toolState = __webpack_require__(2);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -4948,7 +4948,7 @@ var _isMouseButtonEnabled = __webpack_require__(3);
 
 var _isMouseButtonEnabled2 = _interopRequireDefault(_isMouseButtonEnabled);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -5022,17 +5022,15 @@ function brushTool(brushToolInterface) {
   }
 
   function activate(element, mouseButtonMask) {
+    (0, _enabledElementTools.setToolOptions)(toolType, element, { mouseButtonMask: mouseButtonMask });
+
     element.removeEventListener(_events2.default.IMAGE_RENDERED, onImageRendered);
     element.addEventListener(_events2.default.IMAGE_RENDERED, onImageRendered);
-
-    var eventData = {
-      mouseButtonMask: mouseButtonMask
-    };
 
     element.removeEventListener(_events2.default.MOUSE_DOWN_ACTIVATE, mouseDownActivateCallback);
 
     // TODO: Fix jQuery event
-    element.addEventListener(_events2.default.MOUSE_DOWN_ACTIVATE, eventData, mouseDownActivateCallback);
+    element.addEventListener(_events2.default.MOUSE_DOWN_ACTIVATE, mouseDownActivateCallback);
 
     element.removeEventListener(_events2.default.MOUSE_MOVE, mouseMoveCallback);
     element.addEventListener(_events2.default.MOUSE_MOVE, mouseMoveCallback);
@@ -5653,7 +5651,7 @@ Object.defineProperty(exports, 'toolCoordinates', {
   }
 });
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 Object.defineProperty(exports, 'toolColors', {
   enumerable: true,
@@ -7024,7 +7022,7 @@ var _isMouseButtonEnabled2 = _interopRequireDefault(_isMouseButtonEnabled);
 
 var _toolState = __webpack_require__(2);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -10353,7 +10351,7 @@ var _textStyle = __webpack_require__(16);
 
 var _textStyle2 = _interopRequireDefault(_textStyle);
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 var _toolColors2 = _interopRequireDefault(_toolColors);
 
@@ -10576,7 +10574,7 @@ var _textStyle = __webpack_require__(16);
 
 var _textStyle2 = _interopRequireDefault(_textStyle);
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 var _toolColors2 = _interopRequireDefault(_toolColors);
 
@@ -10610,7 +10608,7 @@ var _pointInsideBoundingBox2 = _interopRequireDefault(_pointInsideBoundingBox);
 
 var _toolState = __webpack_require__(2);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -10643,10 +10641,6 @@ function addNewMeasurement(mouseEventData) {
   var measurementData = createNewMeasurement(mouseEventData);
   var cornerstone = _externalModules2.default.cornerstone;
 
-  var eventData = {
-    mouseButtonMask: mouseEventData.which
-  };
-
   function doneChangingTextCallback(text) {
     if (text === null) {
       (0, _toolState.removeToolState)(element, toolType, measurementData);
@@ -10657,10 +10651,10 @@ function addNewMeasurement(mouseEventData) {
     measurementData.active = false;
     cornerstone.updateImage(element);
 
-    element.addEventListener(_events2.default.MOUSE_MOVE, eventData, arrowAnnotate.mouseMoveCallback);
-    element.addEventListener(_events2.default.MOUSE_DOWN, eventData, arrowAnnotate.mouseDownCallback);
-    element.addEventListener(_events2.default.MOUSE_DOWN_ACTIVATE, eventData, arrowAnnotate.mouseDownActivateCallback);
-    element.addEventListener(_events2.default.MOUSE_DOUBLE_CLICK, eventData, arrowAnnotate.mouseDoubleClickCallback);
+    element.addEventListener(_events2.default.MOUSE_MOVE, arrowAnnotate.mouseMoveCallback);
+    element.addEventListener(_events2.default.MOUSE_DOWN, arrowAnnotate.mouseDownCallback);
+    element.addEventListener(_events2.default.MOUSE_DOWN_ACTIVATE, arrowAnnotate.mouseDownActivateCallback);
+    element.addEventListener(_events2.default.MOUSE_DOUBLE_CLICK, arrowAnnotate.mouseDoubleClickCallback);
   }
 
   // Associate this data with this imageId so we can render it and manipulate it
@@ -11114,7 +11108,7 @@ var _convertToVector = __webpack_require__(17);
 
 var _convertToVector2 = _interopRequireDefault(_convertToVector);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -11255,9 +11249,7 @@ function mouseDragCallback(e) {
 }
 
 function enable(element, mouseButtonMask, synchronizationContext) {
-  var eventData = {
-    mouseButtonMask: mouseButtonMask
-  };
+  (0, _enabledElementTools.setToolOptions)(toolType, element, { mouseButtonMask: mouseButtonMask });
 
   // Clear any currently existing toolData
   (0, _toolState.clearToolState)(element, toolType);
@@ -11268,7 +11260,7 @@ function enable(element, mouseButtonMask, synchronizationContext) {
 
   element.removeEventListener(_events2.default.MOUSE_DOWN, mouseDownCallback);
 
-  element.addEventListener(_events2.default.MOUSE_DOWN, eventData, mouseDownCallback);
+  element.addEventListener(_events2.default.MOUSE_DOWN, mouseDownCallback);
 }
 
 // Disables the reference line tool for the given element
@@ -11414,7 +11406,7 @@ var _textStyle = __webpack_require__(16);
 
 var _textStyle2 = _interopRequireDefault(_textStyle);
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 var _toolColors2 = _interopRequireDefault(_toolColors);
 
@@ -11700,7 +11692,7 @@ var _toolStyle = __webpack_require__(7);
 
 var _toolStyle2 = _interopRequireDefault(_toolStyle);
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 var _toolColors2 = _interopRequireDefault(_toolColors);
 
@@ -12159,7 +12151,7 @@ var _toolStyle = __webpack_require__(7);
 
 var _toolStyle2 = _interopRequireDefault(_toolStyle);
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 var _toolColors2 = _interopRequireDefault(_toolColors);
 
@@ -12173,7 +12165,7 @@ var _isMouseButtonEnabled2 = _interopRequireDefault(_isMouseButtonEnabled);
 
 var _toolState = __webpack_require__(2);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -12567,6 +12559,7 @@ function onImageRendered(e) {
     context.restore();
   }
 }
+
 // /////// END IMAGE RENDERING ///////
 function enable(element) {
   element.removeEventListener(_events2.default.MOUSE_DOWN, mouseDownCallback);
@@ -12589,17 +12582,15 @@ function disable(element) {
 
 // Visible and interactive
 function activate(element, mouseButtonMask) {
-  var eventData = {
-    mouseButtonMask: mouseButtonMask
-  };
+  (0, _enabledElementTools.setToolOptions)(toolType, element, { mouseButtonMask: mouseButtonMask });
 
-  element.removeEventListener(_events2.default.MOUSE_DOWN, eventData, mouseDownCallback);
+  element.removeEventListener(_events2.default.MOUSE_DOWN, mouseDownCallback);
   element.removeEventListener(_events2.default.MOUSE_UP, mouseUpCallback);
   element.removeEventListener(_events2.default.MOUSE_MOVE, mouseMoveCallback);
   element.removeEventListener(_events2.default.IMAGE_RENDERED, onImageRendered);
 
   element.addEventListener(_events2.default.IMAGE_RENDERED, onImageRendered);
-  element.addEventListener(_events2.default.MOUSE_DOWN, eventData, mouseDownCallback);
+  element.addEventListener(_events2.default.MOUSE_DOWN, mouseDownCallback);
 
   _externalModules2.default.cornerstone.updateImage(element);
 }
@@ -12664,7 +12655,7 @@ var _toolStyle = __webpack_require__(7);
 
 var _toolStyle2 = _interopRequireDefault(_toolStyle);
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 var _toolColors2 = _interopRequireDefault(_toolColors);
 
@@ -12925,7 +12916,7 @@ var _toolStyle = __webpack_require__(7);
 
 var _toolStyle2 = _interopRequireDefault(_toolStyle);
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 var _toolColors2 = _interopRequireDefault(_toolColors);
 
@@ -13209,7 +13200,11 @@ var _isMouseButtonEnabled = __webpack_require__(3);
 
 var _isMouseButtonEnabled2 = _interopRequireDefault(_isMouseButtonEnabled);
 
+var _enabledElementTools = __webpack_require__(5);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var toolType = 'magnify';
 
 var configuration = {
   magnifySize: 100,
@@ -13245,6 +13240,7 @@ function hideTool(eventData) {
 function mouseDownCallback(e) {
   var eventData = e.detail;
   var element = eventData.element;
+  var options = (0, _enabledElementTools.getToolOptions)(toolType, element);
 
   if ((0, _isMouseButtonEnabled2.default)(eventData.which, options.mouseButtonMask)) {
     element.addEventListener(_events2.default.MOUSE_DRAG, dragCallback);
@@ -13310,7 +13306,7 @@ function drawMagnificationTool(eventData) {
 
   // The 'not' magnifyTool class here is necessary because cornerstone places
   // No classes of it's own on the canvas we want to select
-  var canvas = element.querySelectorAll('canvas:not(.magnifyTool)');
+  var canvas = element.querySelector('canvas:not(.magnifyTool)');
   var context = canvas.getContext('2d');
 
   context.setTransform(1, 0, 0, 1, 0, 0);
@@ -13376,7 +13372,7 @@ function drawMagnificationTool(eventData) {
 /** Creates the magnifying glass canvas */
 function createMagnificationCanvas(element) {
   // If the magnifying glass canvas doesn't already exist
-  if (element.querySelector('.magnifyTool') !== null) {
+  if (element.querySelector('.magnifyTool') === null) {
     // Create a canvas and append it as a child to the element
     var magnifyCanvas = document.createElement('canvas');
     // The magnifyTool class is used to find the canvas later on
@@ -13419,13 +13415,11 @@ function enable(element) {
 }
 
 function activate(element, mouseButtonMask) {
-  var eventData = {
-    mouseButtonMask: mouseButtonMask
-  };
+  (0, _enabledElementTools.setToolOptions)(toolType, element, { mouseButtonMask: mouseButtonMask });
 
   element.removeEventListener(_events2.default.MOUSE_DOWN, mouseDownCallback);
 
-  element.addEventListener(_events2.default.MOUSE_DOWN, eventData, mouseDownCallback);
+  element.addEventListener(_events2.default.MOUSE_DOWN, mouseDownCallback);
   createMagnificationCanvas(element);
 }
 
@@ -13482,7 +13476,7 @@ var _displayTool = __webpack_require__(26);
 
 var _displayTool2 = _interopRequireDefault(_displayTool);
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 var _toolColors2 = _interopRequireDefault(_toolColors);
 
@@ -13626,7 +13620,7 @@ var _isMouseButtonEnabled = __webpack_require__(3);
 
 var _isMouseButtonEnabled2 = _interopRequireDefault(_isMouseButtonEnabled);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -13754,7 +13748,7 @@ var _touchTool = __webpack_require__(11);
 
 var _touchTool2 = _interopRequireDefault(_touchTool);
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 var _toolColors2 = _interopRequireDefault(_toolColors);
 
@@ -13937,7 +13931,7 @@ var _toolStyle = __webpack_require__(7);
 
 var _toolStyle2 = _interopRequireDefault(_toolStyle);
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 var _toolColors2 = _interopRequireDefault(_toolColors);
 
@@ -14410,7 +14404,7 @@ var _isMouseButtonEnabled = __webpack_require__(3);
 
 var _isMouseButtonEnabled2 = _interopRequireDefault(_isMouseButtonEnabled);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -14631,7 +14625,7 @@ var _toolStyle = __webpack_require__(7);
 
 var _toolStyle2 = _interopRequireDefault(_toolStyle);
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 var _toolColors2 = _interopRequireDefault(_toolColors);
 
@@ -14661,7 +14655,7 @@ var _pointInsideBoundingBox2 = _interopRequireDefault(_pointInsideBoundingBox);
 
 var _toolState = __webpack_require__(2);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -15132,7 +15126,7 @@ var _toolStyle = __webpack_require__(7);
 
 var _toolStyle2 = _interopRequireDefault(_toolStyle);
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 var _toolColors2 = _interopRequireDefault(_toolColors);
 
@@ -15428,10 +15422,6 @@ function addNewMeasurement(mouseEventData) {
   var measurementData = createNewMeasurement(mouseEventData);
   var element = mouseEventData.element;
 
-  var eventData = {
-    mouseButtonMask: mouseEventData.which
-  };
-
   // Associate this data with this imageId so we can render it and manipulate it
   (0, _toolState.addToolState)(element, toolType, measurementData);
 
@@ -15451,8 +15441,8 @@ function addNewMeasurement(mouseEventData) {
 
       element.addEventListener(_events2.default.MOUSE_MOVE, simpleAngle.mouseMoveCallback);
       element.addEventListener(_events2.default.MOUSE_DRAG, simpleAngle.mouseMoveCallback);
-      element.addEventListener(_events2.default.MOUSE_DOWN, eventData, simpleAngle.mouseDownCallback);
-      element.addEventListener(_events2.default.MOUSE_DOWN_ACTIVATE, eventData, simpleAngle.mouseDownActivateCallback);
+      element.addEventListener(_events2.default.MOUSE_DOWN, simpleAngle.mouseDownCallback);
+      element.addEventListener(_events2.default.MOUSE_DOWN_ACTIVATE, simpleAngle.mouseDownActivateCallback);
       cornerstone.updateImage(element);
 
       return;
@@ -15470,8 +15460,8 @@ function addNewMeasurement(mouseEventData) {
 
       element.addEventListener(_events2.default.MOUSE_MOVE, simpleAngle.mouseMoveCallback);
       element.addEventListener(_events2.default.MOUSE_DRAG, simpleAngle.mouseMoveCallback);
-      element.addEventListener(_events2.default.MOUSE_DOWN, eventData, simpleAngle.mouseDownCallback);
-      element.addEventListener(_events2.default.MOUSE_DOWN_ACTIVATE, eventData, simpleAngle.mouseDownActivateCallback);
+      element.addEventListener(_events2.default.MOUSE_DOWN, simpleAngle.mouseDownCallback);
+      element.addEventListener(_events2.default.MOUSE_DOWN_ACTIVATE, simpleAngle.mouseDownActivateCallback);
       cornerstone.updateImage(element);
     });
   });
@@ -15572,7 +15562,7 @@ var _pointInsideBoundingBox = __webpack_require__(19);
 
 var _pointInsideBoundingBox2 = _interopRequireDefault(_pointInsideBoundingBox);
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 var _toolColors2 = _interopRequireDefault(_toolColors);
 
@@ -15586,7 +15576,7 @@ var _drawTextBox2 = _interopRequireDefault(_drawTextBox);
 
 var _toolState = __webpack_require__(2);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -15917,7 +15907,7 @@ var _isMouseButtonEnabled = __webpack_require__(3);
 
 var _isMouseButtonEnabled2 = _interopRequireDefault(_isMouseButtonEnabled);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -16041,7 +16031,7 @@ var _toolStyle = __webpack_require__(7);
 
 var _toolStyle2 = _interopRequireDefault(_toolStyle);
 
-var _toolColors = __webpack_require__(5);
+var _toolColors = __webpack_require__(6);
 
 var _toolColors2 = _interopRequireDefault(_toolColors);
 
@@ -16055,7 +16045,7 @@ var _isMouseButtonEnabled = __webpack_require__(3);
 
 var _isMouseButtonEnabled2 = _interopRequireDefault(_isMouseButtonEnabled);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -16064,8 +16054,6 @@ var toolType = 'wwwcRegion';
 var configuration = {
   minWindowWidth: 10
 };
-
-var currentMouseButtonMask = void 0;
 
 /** Calculates the minimum, maximum, and mean value in the given pixel array */
 function calculateMinMaxMean(storedPixelLuminanceData, globalMin, globalMax) {
@@ -16114,11 +16102,7 @@ function newImageCallback(e) {
   element.removeEventListener(_events2.default.MOUSE_UP, dragEndCallback);
   element.removeEventListener(_events2.default.MOUSE_CLICK, dragEndCallback);
 
-  var mouseData = {
-    mouseButtonMask: currentMouseButtonMask
-  };
-
-  element.addEventListener(_events2.default.MOUSE_DOWN, mouseData, mouseDownCallback);
+  element.addEventListener(_events2.default.MOUSE_DOWN, mouseDownCallback);
 }
 
 /* Applies the windowing procedure when the mouse drag ends */
@@ -16132,11 +16116,7 @@ function dragEndCallback(e) {
   element.removeEventListener(_events2.default.MOUSE_UP, dragEndCallback);
   element.removeEventListener(_events2.default.MOUSE_CLICK, dragEndCallback);
 
-  var mouseData = {
-    mouseButtonMask: currentMouseButtonMask
-  };
-
-  element.addEventListener(_events2.default.MOUSE_DOWN, mouseData, mouseDownCallback);
+  element.addEventListener(_events2.default.MOUSE_DOWN, mouseDownCallback);
 
   var toolData = (0, _toolState.getToolState)(eventData.element, toolType);
 
@@ -16349,11 +16329,7 @@ function disable(element) {
 }
 
 function activate(element, mouseButtonMask) {
-  var eventData = {
-    mouseButtonMask: mouseButtonMask
-  };
-
-  currentMouseButtonMask = mouseButtonMask;
+  (0, _enabledElementTools.setToolOptions)(toolType, element, { mouseButtonMask: mouseButtonMask });
 
   var toolData = (0, _toolState.getToolState)(element, toolType);
 
@@ -16374,7 +16350,7 @@ function activate(element, mouseButtonMask) {
   element.removeEventListener(_events2.default.IMAGE_RENDERED, onImageRendered);
   element.removeEventListener(_events2.default.NEW_IMAGE, newImageCallback);
 
-  element.addEventListener(_events2.default.MOUSE_DOWN, eventData, mouseDownCallback);
+  element.addEventListener(_events2.default.MOUSE_DOWN, mouseDownCallback);
   element.addEventListener(_events2.default.IMAGE_RENDERED, onImageRendered);
 
   // If the displayed image changes after the user has started clicking, we should
@@ -16478,7 +16454,7 @@ var _touchDragTool = __webpack_require__(13);
 
 var _touchDragTool2 = _interopRequireDefault(_touchDragTool);
 
-var _enabledElementTools = __webpack_require__(6);
+var _enabledElementTools = __webpack_require__(5);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 

@@ -5,15 +5,13 @@ import toolColors from '../stateManagement/toolColors.js';
 import { getToolState, addToolState } from '../stateManagement/toolState.js';
 import getLuminance from '../util/getLuminance.js';
 import isMouseButtonEnabled from '../util/isMouseButtonEnabled.js';
-import { getToolOptions } from '../enabledElementTools.js';
+import { setToolOptions, getToolOptions } from '../enabledElementTools.js';
 
 const toolType = 'wwwcRegion';
 
 let configuration = {
   minWindowWidth: 10
 };
-
-let currentMouseButtonMask;
 
 /** Calculates the minimum, maximum, and mean value in the given pixel array */
 function calculateMinMaxMean (storedPixelLuminanceData, globalMin, globalMax) {
@@ -62,11 +60,7 @@ function newImageCallback (e) {
   element.removeEventListener(EVENTS.MOUSE_UP, dragEndCallback);
   element.removeEventListener(EVENTS.MOUSE_CLICK, dragEndCallback);
 
-  const mouseData = {
-    mouseButtonMask: currentMouseButtonMask
-  };
-
-  element.addEventListener(EVENTS.MOUSE_DOWN, mouseData, mouseDownCallback);
+  element.addEventListener(EVENTS.MOUSE_DOWN, mouseDownCallback);
 }
 
 /* Applies the windowing procedure when the mouse drag ends */
@@ -80,11 +74,7 @@ function dragEndCallback (e) {
   element.removeEventListener(EVENTS.MOUSE_UP, dragEndCallback);
   element.removeEventListener(EVENTS.MOUSE_CLICK, dragEndCallback);
 
-  const mouseData = {
-    mouseButtonMask: currentMouseButtonMask
-  };
-
-  element.addEventListener(EVENTS.MOUSE_DOWN, mouseData, mouseDownCallback);
+  element.addEventListener(EVENTS.MOUSE_DOWN, mouseDownCallback);
 
   const toolData = getToolState(eventData.element, toolType);
 
@@ -297,11 +287,7 @@ function disable (element) {
 }
 
 function activate (element, mouseButtonMask) {
-  const eventData = {
-    mouseButtonMask
-  };
-
-  currentMouseButtonMask = mouseButtonMask;
+  setToolOptions(toolType, element, { mouseButtonMask });
 
   const toolData = getToolState(element, toolType);
 
@@ -322,7 +308,7 @@ function activate (element, mouseButtonMask) {
   element.removeEventListener(EVENTS.IMAGE_RENDERED, onImageRendered);
   element.removeEventListener(EVENTS.NEW_IMAGE, newImageCallback);
 
-  element.addEventListener(EVENTS.MOUSE_DOWN, eventData, mouseDownCallback);
+  element.addEventListener(EVENTS.MOUSE_DOWN, mouseDownCallback);
   element.addEventListener(EVENTS.IMAGE_RENDERED, onImageRendered);
 
   // If the displayed image changes after the user has started clicking, we should

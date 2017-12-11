@@ -5,7 +5,7 @@ import { addToolState, getToolState, clearToolState } from '../stateManagement/t
 import isMouseButtonEnabled from '../util/isMouseButtonEnabled.js';
 import { imagePointToPatientPoint } from '../util/pointProjector.js';
 import convertToVector3 from '../util/convertToVector3.js';
-import { getToolOptions } from '../enabledElementTools.js';
+import { setToolOptions, getToolOptions } from '../enabledElementTools.js';
 
 const toolType = 'crosshairs';
 
@@ -144,11 +144,9 @@ function mouseDragCallback (e) {
 }
 
 function enable (element, mouseButtonMask, synchronizationContext) {
-  const eventData = {
-    mouseButtonMask
-  };
+  setToolOptions(toolType, element, { mouseButtonMask });
 
-    // Clear any currently existing toolData
+  // Clear any currently existing toolData
   clearToolState(element, toolType);
 
   addToolState(element, toolType, {
@@ -157,7 +155,7 @@ function enable (element, mouseButtonMask, synchronizationContext) {
 
   element.removeEventListener(EVENTS.MOUSE_DOWN, mouseDownCallback);
 
-  element.addEventListener(EVENTS.MOUSE_DOWN, eventData, mouseDownCallback);
+  element.addEventListener(EVENTS.MOUSE_DOWN, mouseDownCallback);
 }
 
 // Disables the reference line tool for the given element

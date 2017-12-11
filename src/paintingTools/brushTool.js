@@ -3,7 +3,7 @@ import external from '../externalModules.js';
 import { getToolState, addToolState } from '../stateManagement/toolState.js';
 import mouseButtonTool from '../imageTools/mouseButtonTool.js';
 import isMouseButtonEnabled from '../util/isMouseButtonEnabled.js';
-import { getToolOptions } from '../enabledElementTools.js';
+import { setToolOptions, getToolOptions } from '../enabledElementTools.js';
 
 const TOOL_STATE_TOOL_TYPE = 'brush';
 let brushLayerId;
@@ -75,17 +75,15 @@ export default function brushTool (brushToolInterface) {
   }
 
   function activate (element, mouseButtonMask) {
+    setToolOptions(toolType, element, { mouseButtonMask });
+
     element.removeEventListener(EVENTS.IMAGE_RENDERED, onImageRendered);
     element.addEventListener(EVENTS.IMAGE_RENDERED, onImageRendered);
-
-    const eventData = {
-      mouseButtonMask
-    };
 
     element.removeEventListener(EVENTS.MOUSE_DOWN_ACTIVATE, mouseDownActivateCallback);
 
     // TODO: Fix jQuery event
-    element.addEventListener(EVENTS.MOUSE_DOWN_ACTIVATE, eventData, mouseDownActivateCallback);
+    element.addEventListener(EVENTS.MOUSE_DOWN_ACTIVATE, mouseDownActivateCallback);
 
     element.removeEventListener(EVENTS.MOUSE_MOVE, mouseMoveCallback);
     element.addEventListener(EVENTS.MOUSE_MOVE, mouseMoveCallback);

@@ -283,11 +283,7 @@ function addNewMeasurement (mouseEventData) {
   const measurementData = createNewMeasurement(mouseEventData);
   const element = mouseEventData.element;
 
-  const eventData = {
-    mouseButtonMask: mouseEventData.which
-  };
-
-    // Associate this data with this imageId so we can render it and manipulate it
+  // Associate this data with this imageId so we can render it and manipulate it
   addToolState(element, toolType, measurementData);
 
   // Since we are dragging to another place to drop the end point, we can just activate
@@ -306,8 +302,8 @@ function addNewMeasurement (mouseEventData) {
 
       element.addEventListener(EVENTS.MOUSE_MOVE, simpleAngle.mouseMoveCallback);
       element.addEventListener(EVENTS.MOUSE_DRAG, simpleAngle.mouseMoveCallback);
-      element.addEventListener(EVENTS.MOUSE_DOWN, eventData, simpleAngle.mouseDownCallback);
-      element.addEventListener(EVENTS.MOUSE_DOWN_ACTIVATE, eventData, simpleAngle.mouseDownActivateCallback);
+      element.addEventListener(EVENTS.MOUSE_DOWN, simpleAngle.mouseDownCallback);
+      element.addEventListener(EVENTS.MOUSE_DOWN_ACTIVATE, simpleAngle.mouseDownActivateCallback);
       cornerstone.updateImage(element);
 
       return;
@@ -325,8 +321,8 @@ function addNewMeasurement (mouseEventData) {
 
       element.addEventListener(EVENTS.MOUSE_MOVE, simpleAngle.mouseMoveCallback);
       element.addEventListener(EVENTS.MOUSE_DRAG, simpleAngle.mouseMoveCallback);
-      element.addEventListener(EVENTS.MOUSE_DOWN, eventData, simpleAngle.mouseDownCallback);
-      element.addEventListener(EVENTS.MOUSE_DOWN_ACTIVATE, eventData, simpleAngle.mouseDownActivateCallback);
+      element.addEventListener(EVENTS.MOUSE_DOWN, simpleAngle.mouseDownCallback);
+      element.addEventListener(EVENTS.MOUSE_DOWN_ACTIVATE, simpleAngle.mouseDownActivateCallback);
       cornerstone.updateImage(element);
     });
   });

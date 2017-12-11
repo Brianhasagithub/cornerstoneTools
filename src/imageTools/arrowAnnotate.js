@@ -45,10 +45,6 @@ function addNewMeasurement (mouseEventData) {
   const measurementData = createNewMeasurement(mouseEventData);
   const cornerstone = external.cornerstone;
 
-  const eventData = {
-    mouseButtonMask: mouseEventData.which
-  };
-
   function doneChangingTextCallback (text) {
     if (text === null) {
       removeToolState(element, toolType, measurementData);
@@ -59,10 +55,10 @@ function addNewMeasurement (mouseEventData) {
     measurementData.active = false;
     cornerstone.updateImage(element);
 
-    element.addEventListener(EVENTS.MOUSE_MOVE, eventData, arrowAnnotate.mouseMoveCallback);
-    element.addEventListener(EVENTS.MOUSE_DOWN, eventData, arrowAnnotate.mouseDownCallback);
-    element.addEventListener(EVENTS.MOUSE_DOWN_ACTIVATE, eventData, arrowAnnotate.mouseDownActivateCallback);
-    element.addEventListener(EVENTS.MOUSE_DOUBLE_CLICK, eventData, arrowAnnotate.mouseDoubleClickCallback);
+    element.addEventListener(EVENTS.MOUSE_MOVE, arrowAnnotate.mouseMoveCallback);
+    element.addEventListener(EVENTS.MOUSE_DOWN, arrowAnnotate.mouseDownCallback);
+    element.addEventListener(EVENTS.MOUSE_DOWN_ACTIVATE, arrowAnnotate.mouseDownActivateCallback);
+    element.addEventListener(EVENTS.MOUSE_DOUBLE_CLICK, arrowAnnotate.mouseDoubleClickCallback);
   }
 
   // Associate this data with this imageId so we can render it and manipulate it

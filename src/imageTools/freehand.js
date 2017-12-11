@@ -5,7 +5,7 @@ import toolColors from '../stateManagement/toolColors.js';
 import drawHandles from '../manipulators/drawHandles.js';
 import isMouseButtonEnabled from '../util/isMouseButtonEnabled.js';
 import { addToolState, getToolState } from '../stateManagement/toolState.js';
-import { getToolOptions } from '../enabledElementTools.js';
+import { setToolOptions, getToolOptions } from '../enabledElementTools.js';
 
 const toolType = 'freehand';
 let configuration = {
@@ -396,6 +396,7 @@ function onImageRendered (e) {
     context.restore();
   }
 }
+
 // /////// END IMAGE RENDERING ///////
 function enable (element) {
   element.removeEventListener(EVENTS.MOUSE_DOWN, mouseDownCallback);
@@ -418,17 +419,15 @@ function disable (element) {
 
 // Visible and interactive
 function activate (element, mouseButtonMask) {
-  const eventData = {
-    mouseButtonMask
-  };
+  setToolOptions(toolType, element, { mouseButtonMask });
 
-  element.removeEventListener(EVENTS.MOUSE_DOWN, eventData, mouseDownCallback);
+  element.removeEventListener(EVENTS.MOUSE_DOWN, mouseDownCallback);
   element.removeEventListener(EVENTS.MOUSE_UP, mouseUpCallback);
   element.removeEventListener(EVENTS.MOUSE_MOVE, mouseMoveCallback);
   element.removeEventListener(EVENTS.IMAGE_RENDERED, onImageRendered);
 
   element.addEventListener(EVENTS.IMAGE_RENDERED, onImageRendered);
-  element.addEventListener(EVENTS.MOUSE_DOWN, eventData, mouseDownCallback);
+  element.addEventListener(EVENTS.MOUSE_DOWN, mouseDownCallback);
 
   external.cornerstone.updateImage(element);
 }

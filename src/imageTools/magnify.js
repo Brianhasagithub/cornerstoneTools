@@ -3,6 +3,9 @@ import external from '../externalModules.js';
 import touchDragTool from './touchDragTool.js';
 import { getBrowserInfo } from '../util/getMaxSimultaneousRequests.js';
 import isMouseButtonEnabled from '../util/isMouseButtonEnabled.js';
+import { setToolOptions, getToolOptions } from '../enabledElementTools.js';
+
+const toolType = 'magnify';
 
 let configuration = {
   magnifySize: 100,
@@ -38,6 +41,7 @@ function hideTool (eventData) {
 function mouseDownCallback (e) {
   const eventData = e.detail;
   const element = eventData.element;
+  const options = getToolOptions(toolType, element);
 
   if (isMouseButtonEnabled(eventData.which, options.mouseButtonMask)) {
     element.addEventListener(EVENTS.MOUSE_DRAG, dragCallback);
@@ -103,7 +107,7 @@ function drawMagnificationTool (eventData) {
 
   // The 'not' magnifyTool class here is necessary because cornerstone places
   // No classes of it's own on the canvas we want to select
-  const canvas = element.querySelectorAll('canvas:not(.magnifyTool)');
+  const canvas = element.querySelector('canvas:not(.magnifyTool)');
   const context = canvas.getContext('2d');
 
   context.setTransform(1, 0, 0, 1, 0, 0);
@@ -169,7 +173,7 @@ function drawMagnificationTool (eventData) {
 /** Creates the magnifying glass canvas */
 function createMagnificationCanvas (element) {
   // If the magnifying glass canvas doesn't already exist
-  if (element.querySelector('.magnifyTool') !== null) {
+  if (element.querySelector('.magnifyTool') === null) {
     // Create a canvas and append it as a child to the element
     const magnifyCanvas = document.createElement('canvas');
     // The magnifyTool class is used to find the canvas later on
@@ -212,13 +216,11 @@ function enable (element) {
 }
 
 function activate (element, mouseButtonMask) {
-  const eventData = {
-    mouseButtonMask
-  };
+  setToolOptions(toolType, element, { mouseButtonMask });
 
   element.removeEventListener(EVENTS.MOUSE_DOWN, mouseDownCallback);
 
-  element.addEventListener(EVENTS.MOUSE_DOWN, eventData, mouseDownCallback);
+  element.addEventListener(EVENTS.MOUSE_DOWN, mouseDownCallback);
   createMagnificationCanvas(element);
 }
 
