@@ -16188,8 +16188,8 @@ function whichMovement(e) {
   var eventData = e.detail;
   var element = eventData.element;
 
-  element.removeEventListener(_events2.default.MOUSE_MOVE);
-  element.removeEventListener(_events2.default.MOUSE_DRAG);
+  element.removeEventListener(_events2.default.MOUSE_MOVE, whichMovement);
+  element.removeEventListener(_events2.default.MOUSE_DRAG, whichMovement);
 
   element.addEventListener(_events2.default.MOUSE_MOVE, dragCallback);
   element.addEventListener(_events2.default.MOUSE_DRAG, dragCallback);
@@ -16238,26 +16238,28 @@ function recordStartPoint(eventData) {
 /** Draws the rectangular region while the touch or mouse event drag occurs */
 function dragCallback(e) {
   var eventData = e.detail;
+  var element = eventData.element;
 
   // If we have no toolData for this element, return immediately as there is nothing to do
-  var toolData = (0, _toolState.getToolState)(eventData.element, toolType);
+  var toolData = (0, _toolState.getToolState)(element, toolType);
 
   if (!toolData || !toolData.data || !toolData.data.length) {
     return;
   }
 
   // Update the endpoint as the mouse/touch is dragged
-  var endPoint = {
+  toolData.data[0].endPoint = {
     x: eventData.currentPoints.image.x,
     y: eventData.currentPoints.image.y
   };
 
-  toolData.data[0].endPoint = endPoint;
-  _externalModules2.default.cornerstone.updateImage(eventData.element);
+  _externalModules2.default.cornerstone.updateImage(element);
 }
 
 function onImageRendered(e) {
   var eventData = e.detail;
+  var element = eventData.element;
+  var context = eventData.canvasContext;
   var cornerstone = _externalModules2.default.cornerstone;
   var toolData = (0, _toolState.getToolState)(eventData.element, toolType);
 
@@ -16272,19 +16274,14 @@ function onImageRendered(e) {
     return;
   }
 
-  // Get the current element's canvas
-  var element = eventData.element;
-  var canvas = element.querySelectorAll('canvas').get(0);
-  var context = canvas.getContext('2d');
-
   context.setTransform(1, 0, 0, 1, 0, 0);
 
   // Set to the active tool color
   var color = _toolColors2.default.getActiveColor();
 
   // Calculate the rectangle parameters
-  var startPointCanvas = cornerstone.pixelToCanvas(eventData.element, startPoint);
-  var endPointCanvas = cornerstone.pixelToCanvas(eventData.element, endPoint);
+  var startPointCanvas = cornerstone.pixelToCanvas(element, startPoint);
+  var endPointCanvas = cornerstone.pixelToCanvas(element, endPoint);
 
   var left = Math.min(startPointCanvas.x, endPointCanvas.x);
   var top = Math.min(startPointCanvas.y, endPointCanvas.y);

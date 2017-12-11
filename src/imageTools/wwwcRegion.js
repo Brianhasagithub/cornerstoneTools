@@ -146,8 +146,8 @@ function whichMovement (e) {
   const eventData = e.detail;
   const element = eventData.element;
 
-  element.removeEventListener(EVENTS.MOUSE_MOVE);
-  element.removeEventListener(EVENTS.MOUSE_DRAG);
+  element.removeEventListener(EVENTS.MOUSE_MOVE, whichMovement);
+  element.removeEventListener(EVENTS.MOUSE_DRAG, whichMovement);
 
   element.addEventListener(EVENTS.MOUSE_MOVE, dragCallback);
   element.addEventListener(EVENTS.MOUSE_DRAG, dragCallback);
@@ -196,26 +196,28 @@ function recordStartPoint (eventData) {
 /** Draws the rectangular region while the touch or mouse event drag occurs */
 function dragCallback (e) {
   const eventData = e.detail;
+  const element = eventData.element;
 
   // If we have no toolData for this element, return immediately as there is nothing to do
-  const toolData = getToolState(eventData.element, toolType);
+  const toolData = getToolState(element, toolType);
 
   if (!toolData || !toolData.data || !toolData.data.length) {
     return;
   }
 
   // Update the endpoint as the mouse/touch is dragged
-  const endPoint = {
+  toolData.data[0].endPoint = {
     x: eventData.currentPoints.image.x,
     y: eventData.currentPoints.image.y
   };
 
-  toolData.data[0].endPoint = endPoint;
-  external.cornerstone.updateImage(eventData.element);
+  external.cornerstone.updateImage(element);
 }
 
 function onImageRendered (e) {
   const eventData = e.detail;
+  const element = eventData.element;
+  const context = eventData.canvasContext;
   const cornerstone = external.cornerstone;
   const toolData = getToolState(eventData.element, toolType);
 
@@ -230,19 +232,14 @@ function onImageRendered (e) {
     return;
   }
 
-  // Get the current element's canvas
-  const element = eventData.element;
-  const canvas = element.querySelectorAll('canvas').get(0);
-  const context = canvas.getContext('2d');
-
   context.setTransform(1, 0, 0, 1, 0, 0);
 
   // Set to the active tool color
   const color = toolColors.getActiveColor();
 
   // Calculate the rectangle parameters
-  const startPointCanvas = cornerstone.pixelToCanvas(eventData.element, startPoint);
-  const endPointCanvas = cornerstone.pixelToCanvas(eventData.element, endPoint);
+  const startPointCanvas = cornerstone.pixelToCanvas(element, startPoint);
+  const endPointCanvas = cornerstone.pixelToCanvas(element, endPoint);
 
   const left = Math.min(startPointCanvas.x, endPointCanvas.x);
   const top = Math.min(startPointCanvas.y, endPointCanvas.y);
